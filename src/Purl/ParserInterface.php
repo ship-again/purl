@@ -7,9 +7,9 @@ namespace Purl;
 interface ParserInterface
 {
     /**
-     * @param string|Url|null $url
+     * @param null|string|Url $url
      *
-     * @return mixed[]
+     * @return array<string, null|int|string>
      */
-    public function parseUrl($url) : array;
+    public function parseUrl($url): array;
 }

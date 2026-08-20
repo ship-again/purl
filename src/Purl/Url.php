@@ -4,36 +4,25 @@ declare(strict_types=1);
 
 namespace Purl;
 
-use function array_map;
-use function explode;
-use function ltrim;
-use function preg_match_all;
-use function sprintf;
-use function strpos;
-
 /**
  * Url is a simple OO class for manipulating Urls in PHP.
  *
- * @property string $scheme
- * @property string $host
- * @property int $port
- * @property string $user
- * @property string $pass
- * @property Path|string $path
- * @property Query|string $query
- * @property Fragment|string $fragment
- * @property string $canonical
- * @property string $resource
+ * @property null|string          $scheme
+ * @property null|string          $host
+ * @property null|int|string      $port
+ * @property null|string          $user
+ * @property null|string          $pass
+ * @property null|Path|string     $path
+ * @property null|Query|string    $query
+ * @property null|Fragment|string $fragment
+ * @property null|string          $canonical
+ * @property null|string          $resource
+ *
+ * @psalm-api
  */
 class Url extends AbstractPart
 {
-    /** @var string|null The original url string. */
-    private $url;
-
-    /** @var ParserInterface|null */
-    private $parser;
-
-    /** @var mixed[] */
+    /** @var array<array-key, mixed> */
     protected $data = [
         'scheme'             => null,
         'host'               => null,
@@ -50,20 +39,31 @@ class Url extends AbstractPart
         'resource'           => null,
     ];
 
-    /** @var string[] */
+    /** @var array<string, string> */
     protected $partClassMap = [
-        'path' => 'Purl\Path',
-        'query' => 'Purl\Query',
+        'path'     => 'Purl\Path',
+        'query'    => 'Purl\Query',
         'fragment' => 'Purl\Fragment',
     ];
 
+    /** @var null|string The original url string. */
+    private $url;
+
+    /** @var null|ParserInterface */
+    private $parser;
+
     public function __construct(?string $url = null, ?ParserInterface $parser = null)
     {
-        $this->url    = $url;
+        $this->url = $url;
         $this->parser = $parser;
     }
 
-    public static function parse(string $url) : Url
+    public function __toString(): string
+    {
+        return $this->getUrl();
+    }
+
+    public static function parse(string $url): Url
     {
         return new self($url);
     }
@@ -71,11 +71,11 @@ class Url extends AbstractPart
     /**
      * @return Url[] $urls
      */
-    public static function extract(string $string) : array
+    public static function extract(string $string): array
     {
         $regex = '/(http|https|ftp|ftps)\:\/\/[a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,}(\/\S*)?/';
 
-        preg_match_all($regex, $string, $matches);
+        \preg_match_all($regex, $string, $matches);
         $urls = [];
         foreach ($matches[0] as $url) {
             $urls[] = self::parse($url);
@@ -84,20 +84,26 @@ class Url extends AbstractPart
         return $urls;
     }
 
-    public static function fromCurrent() : Url
+    public static function fromCurrent(): Url
     {
-        $scheme = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' || isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] === 443 ? 'https' : 'http';
+        $https = isset($_SERVER['HTTPS']) ? $_SERVER['HTTPS'] : '';
+        $serverPort = isset($_SERVER['SERVER_PORT']) ? (int) $_SERVER['SERVER_PORT'] : 0;
+        $hasHttps = isset($_SERVER['HTTPS']) && 'off' !== $https;
+        $scheme = $hasHttps || 443 === $serverPort ? 'https' : 'http';
 
-        $host    = $_SERVER['HTTP_HOST'];
-        $baseUrl = sprintf('%s://%s', $scheme, $host);
+        $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '';
+        $baseUrl = \sprintf('%s://%s', $scheme, $host);
 
         $url = new self($baseUrl);
 
-        if (isset($_SERVER['REQUEST_URI']) && $_SERVER['REQUEST_URI']) {
-            if (strpos($_SERVER['REQUEST_URI'], '?') !== false) {
-                [$path, $query] = explode('?', $_SERVER['REQUEST_URI'], 2);
+        $requestUri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
+        if ('' !== $requestUri) {
+            if (false !== \strpos($requestUri, '?')) {
+                $requestParts = \explode('?', $requestUri, 2);
+                $path = $requestParts[0];
+                $query = $requestParts[1] ?? '';
             } else {
-                $path  = $_SERVER['REQUEST_URI'];
+                $path = $requestUri;
                 $query = '';
             }
 
@@ -106,11 +112,10 @@ class Url extends AbstractPart
         }
 
         // Only set port if different from default (80 or 443)
-        if (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT']) {
-            $port = $_SERVER['SERVER_PORT'];
-            if (($scheme === 'http' && $port !== 80) ||
-                ($scheme === 'https' && $port !== 443)) {
-                $url->set('port', $port);
+        if ($serverPort > 0) {
+            if (('http' === $scheme && 80 !== $serverPort)
+                || ('https' === $scheme && 443 !== $serverPort)) {
+                $url->set('port', $serverPort);
             }
         }
 
@@ -125,16 +130,16 @@ class Url extends AbstractPart
         return $url;
     }
 
-    public function getParser() : ParserInterface
+    public function getParser(): ParserInterface
     {
-        if ($this->parser === null) {
+        if (null === $this->parser) {
             $this->parser = self::createDefaultParser();
         }
 
         return $this->parser;
     }
 
-    public function setParser(ParserInterface $parser) : void
+    public function setParser(ParserInterface $parser): void
     {
         $this->parser = $parser;
     }
@@ -142,25 +147,25 @@ class Url extends AbstractPart
     /**
      * @param string|Url $url
      */
-    public function join($url) : Url
+    public function join($url): Url
     {
         $this->initialize();
         $parts = $this->getParser()->parseUrl($url);
 
-        if ($this->data['scheme'] !== null) {
-            $parts['scheme'] = $this->data['scheme'];
+        if (null !== $this->data['scheme']) {
+            $parts['scheme'] = (string) $this->data['scheme'];
         }
 
         foreach ($parts as $key => $value) {
-            if ($value === null) {
+            if (null === $value) {
                 continue;
             }
 
             $this->data[$key] = $value;
         }
 
-        foreach ($this->data as $key => $value) {
-            $this->data[$key] = $this->preparePartValue($key, $value);
+        foreach (array_keys($this->data) as $key) {
+            $this->data[$key] = $this->preparePartValue((string) $key, $this->data[$key]);
         }
 
         return $this;
@@ -169,7 +174,7 @@ class Url extends AbstractPart
     /**
      * @param mixed $value
      */
-    public function set(string $key, $value) : AbstractPart
+    public function set(string $key, $value): AbstractPart
     {
         $this->initialize();
 
@@ -178,88 +183,104 @@ class Url extends AbstractPart
         return $this;
     }
 
-    public function setPath(Path $path) : AbstractPart
+    public function setPath(Path $path): AbstractPart
     {
         $this->data['path'] = $path;
 
         return $this;
     }
 
-    public function getPath() : Path
+    public function getPath(): Path
     {
         $this->initialize();
+
+        if (!$this->data['path'] instanceof Path) {
+            $this->data['path'] = new Path(null);
+        }
 
         return $this->data['path'];
     }
 
-    public function setQuery(Query $query) : AbstractPart
+    public function setQuery(Query $query): AbstractPart
     {
         $this->data['query'] = $query;
 
         return $this;
     }
 
-    public function getQuery() : Query
+    public function getQuery(): Query
     {
         $this->initialize();
+
+        if (!$this->data['query'] instanceof Query) {
+            $this->data['query'] = new Query(null);
+        }
 
         return $this->data['query'];
     }
 
-    public function setFragment(Fragment $fragment) : AbstractPart
+    public function setFragment(Fragment $fragment): AbstractPart
     {
         $this->data['fragment'] = $fragment;
 
         return $this;
     }
 
-    public function getFragment() : Fragment
+    public function getFragment(): Fragment
     {
         $this->initialize();
+
+        if (!$this->data['fragment'] instanceof Fragment) {
+            $this->data['fragment'] = new Fragment(null);
+        }
 
         return $this->data['fragment'];
     }
 
-    public function getNetloc() : string
+    public function getNetloc(): string
     {
         $this->initialize();
 
-        return ($this->user !== null && $this->pass !== null ? $this->user . ($this->pass !== null ? ':' . $this->pass : '') . '@' : '') . $this->host . ($this->port !== null ? ':' . $this->port : '');
+        $user = $this->user;
+        $pass = $this->pass;
+        $host = $this->host;
+        $port = $this->port;
+
+        $auth = null !== $user && null !== $pass ? $user.':'.$pass.'@' : '';
+
+        return $auth.(string) $host.(null !== $port ? ':'.$port : '');
     }
 
-    public function getUrl() : string
+    public function getUrl(): string
     {
         $this->initialize();
 
-        $parts = array_map('strval', $this->data);
+        $parts = \array_map(static function ($value): string {
+            return (string) $value;
+        }, $this->data);
 
-        if (! $this->isAbsolute()) {
+        if (!$this->isAbsolute()) {
             return self::httpBuildRelativeUrl($parts);
         }
 
         return self::httpBuildUrl($parts);
     }
 
-    public function setUrl(string $url) : void
+    public function setUrl(string $url): void
     {
         $this->initialized = false;
-        $this->data        = [];
-        $this->url         = $url;
+        $this->data = [];
+        $this->url = $url;
     }
 
-    public function isAbsolute() : bool
+    public function isAbsolute(): bool
     {
         $this->initialize();
 
-        return $this->scheme !== null && $this->host !== null;
+        return null !== $this->scheme && null !== $this->host;
     }
 
-    public function __toString() : string
-    {
-        return $this->getUrl();
-    }
-
-    protected function doInitialize() : void
+    protected function doInitialize(): void
     {
         $parts = $this->getParser()->parseUrl($this->url);
 
@@ -271,23 +292,23 @@ class Url extends AbstractPart
             $this->data[$k] = $v;
         }
 
-        foreach ($this->data as $key => $value) {
-            $this->data[$key] = $this->preparePartValue($key, $value);
+        foreach (array_keys($this->data) as $key) {
+            $this->data[$key] = $this->preparePartValue((string) $key, $this->data[$key]);
         }
     }
 
     /**
      * @param string[] $parts
      */
-    private static function httpBuildUrl(array $parts) : string
+    private static function httpBuildUrl(array $parts): string
     {
         $relative = self::httpBuildRelativeUrl($parts);
 
-        $pass = $parts['pass'] !== '' ? sprintf(':%s', $parts['pass']) : '';
-        $auth = $parts['user'] !== '' ? sprintf('%s%s@', $parts['user'], $pass) : '';
-        $port = $parts['port'] !== '' ? sprintf(':%d', $parts['port']) : '';
+        $pass = '' !== $parts['pass'] ? \sprintf(':%s', $parts['pass']) : '';
+        $auth = '' !== $parts['user'] ? \sprintf('%s%s@', $parts['user'], $pass) : '';
+        $port = '' !== $parts['port'] ? \sprintf(':%d', $parts['port']) : '';
 
-        return sprintf(
+        return \sprintf(
             '%s://%s%s%s%s',
             $parts['scheme'],
             $auth,
@@ -300,19 +321,19 @@ class Url extends AbstractPart
     /**
      * @param string[] $parts
      */
-    private static function httpBuildRelativeUrl(array $parts) : string
+    private static function httpBuildRelativeUrl(array $parts): string
     {
-        $parts['path'] = ltrim($parts['path'], '/');
+        $parts['path'] = \ltrim($parts['path'], '/');
 
-        return sprintf(
+        return \sprintf(
             '/%s%s%s',
             $parts['path'],
-            $parts['query'] !== '' ? '?' . $parts['query'] : '',
-            $parts['fragment'] !== '' ? '#' . $parts['fragment'] : ''
+            '' !== $parts['query'] ? '?'.$parts['query'] : '',
+            '' !== $parts['fragment'] ? '#'.$parts['fragment'] : ''
         );
     }
 
-    private static function createDefaultParser() : Parser
+    private static function createDefaultParser(): Parser
     {
         return new Parser();
     }

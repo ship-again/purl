@@ -7,4 +7,9 @@
         </testsuite>
     </testsuites>
 
+    <source>
+        <include>
+            <directory suffix=".php">./src/Purl/</directory>
+        </include>
+    </source>
 </phpunit>

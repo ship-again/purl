@@ -4,57 +4,55 @@ declare(strict_types=1);
 
 namespace Purl;
 
-use InvalidArgumentException;
-use function array_merge;
-use function array_reverse;
-use function explode;
-use function implode;
-use function parse_url;
-use function sprintf;
-
 /**
  * Parser class.
+ *
+ * @psalm-api
  */
 class Parser implements ParserInterface
 {
-    /** @var mixed[] */
+    /** @var array<string, null|int|string> */
     private static $defaultParts = [
-        'scheme'             => null,
-        'host'               => null,
-        'port'               => null,
-        'user'               => null,
-        'pass'               => null,
-        'path'               => null,
-        'query'              => null,
-        'fragment'           => null,
-        'canonical'          => null,
-        'resource'           => null,
+        'scheme'    => null,
+        'host'      => null,
+        'port'      => null,
+        'user'      => null,
+        'pass'      => null,
+        'path'      => null,
+        'query'     => null,
+        'fragment'  => null,
+        'canonical' => null,
+        'resource'  => null,
     ];
 
     /**
-     * @param string|Url|null $url
+     * @param null|string|Url $url
      *
-     * @return mixed[]
+     * @return array<string, null|int|string>
      */
-    public function parseUrl($url) : array
+    public function parseUrl($url): array
     {
         $url = (string) $url;
 
         $parsedUrl = $this->doParseUrl($url);
 
-        if ($parsedUrl === []) {
-            throw new InvalidArgumentException(sprintf('Invalid url %s', $url));
+        if ([] === $parsedUrl) {
+            throw new \InvalidArgumentException(\sprintf('Invalid url %s', $url));
         }
 
-        $parsedUrl = array_merge(self::$defaultParts, $parsedUrl);
+        $parsedUrl = \array_merge(self::$defaultParts, $parsedUrl);
 
         if (isset($parsedUrl['host'])) {
-            $parsedUrl['canonical'] = implode('.', array_reverse(explode('.', $parsedUrl['host']))) . ($parsedUrl['path'] ?? '') . (isset($parsedUrl['query']) ? '?' . $parsedUrl['query'] : '');
+            $host = (string) $parsedUrl['host'];
+            $path = isset($parsedUrl['path']) ? (string) $parsedUrl['path'] : '';
+            $query = isset($parsedUrl['query']) ? (string) $parsedUrl['query'] : null;
 
-            $parsedUrl['resource'] = $parsedUrl['path'] ?? '';
+            $parsedUrl['canonical'] = \implode('.', \array_reverse(\explode('.', $host))).$path.(null !== $query ? '?'.$query : '');
 
-            if (isset($parsedUrl['query'])) {
-                $parsedUrl['resource'] .= '?' . $parsedUrl['query'];
+            $parsedUrl['resource'] = $path;
+
+            if (null !== $query) {
+                $parsedUrl['resource'] .= '?'.$query;
             }
         }
 
@@ -62,12 +60,12 @@ class Parser implements ParserInterface
     }
 
     /**
-     * @return mixed[]
+     * @return array<string, int|string>
      */
-    protected function doParseUrl(string $url) : array
+    protected function doParseUrl(string $url): array
     {
-        $parsedUrl = parse_url($url);
+        $parsedUrl = \parse_url($url);
 
-        return $parsedUrl !== false ? $parsedUrl : [];
+        return false !== $parsedUrl ? $parsedUrl : [];
     }
 }

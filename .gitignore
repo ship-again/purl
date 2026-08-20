@@ -1,7 +1,8 @@
 /data/public-suffix-list.txt
-/phpstan.neon
 /phpunit.xml
-/.phpcs-cache
+/.php-cs-fixer.cache
+/build
 /vendor
+/tools/qa/vendor
 /.phpunit.result.cache
-
+/.psalm-cache

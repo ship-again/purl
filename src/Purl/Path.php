@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace Purl;
 
-use function array_map;
-use function explode;
-use function implode;
-use function str_replace;
-
 /**
  * Path represents the part of a Url after the domain suffix and before the hashmark (#).
+ *
+ * @psalm-api
  */
 class Path extends AbstractPart
 {
-    /** @var string|null The original path string. */
+    /** @var array<array-key, mixed> */
+    protected $data = [];
+
+    /** @var null|string The original path string. */
     private $path;
 
     public function __construct(?string $path = null)
@@ -22,38 +22,41 @@ class Path extends AbstractPart
         $this->path = $path;
     }
 
-    public function getPath() : string
+    public function __toString(): string
+    {
+        return $this->getPath();
+    }
+
+    public function getPath(): string
     {
         $this->initialize();
 
-        return implode('/', array_map(static function ($value) {
-            return str_replace(' ', '%20', $value);
-        }, $this->data));
+        /** @var string[] $segments */
+        $segments = $this->data;
+
+        return \implode('/', \array_map(static function (string $value): string {
+            return \str_replace(' ', '%20', $value);
+        }, $segments));
     }
 
-    public function setPath(string $path) : void
+    public function setPath(string $path): void
     {
         $this->initialized = false;
-        $this->path        = $path;
+        $this->path = $path;
     }
 
     /**
-     * @return mixed[]
+     * @return array<array-key, mixed>
      */
-    public function getSegments() : array
+    public function getSegments(): array
     {
         $this->initialize();
 
         return $this->data;
     }
 
-    public function __toString() : string
+    protected function doInitialize(): void
     {
-        return $this->getPath();
-    }
-
-    protected function doInitialize() : void
-    {
-        $this->data = explode('/', (string) $this->path);
+        $this->data = \explode('/', (string) $this->path);
     }
 }

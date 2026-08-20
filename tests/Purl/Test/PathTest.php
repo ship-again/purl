@@ -7,15 +7,20 @@ namespace Purl\Test;
 use PHPUnit\Framework\TestCase;
 use Purl\Path;
 
+/**
+ * @internal
+ *
+ * @coversNothing
+ */
 class PathTest extends TestCase
 {
-    public function testConstruct() : void
+    public function testConstruct(): void
     {
         $path = new Path('test');
         $this->assertEquals('test', $path->getPath());
     }
 
-    public function testGetSetPath() : void
+    public function testGetSetPath(): void
     {
         $path = new Path();
         $this->assertEquals('', $path->getPath());
@@ -23,13 +28,13 @@ class PathTest extends TestCase
         $this->assertEquals('test', $path->getPath());
     }
 
-    public function testGetSegments() : void
+    public function testGetSegments(): void
     {
         $path = new Path('about/me');
         $this->assertEquals(['about', 'me'], $path->getSegments());
     }
 
-    public function testToString() : void
+    public function testToString(): void
     {
         $path = new Path('about/me');
         $this->assertEquals('about/me', (string) $path);

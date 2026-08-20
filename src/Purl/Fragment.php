@@ -4,41 +4,38 @@ declare(strict_types=1);
 
 namespace Purl;
 
-use function array_merge;
-use function is_array;
-use function parse_url;
-use function sprintf;
-
 /**
  * Fragment represents the part of a Url after the hashmark (#).
  *
- * @property Path|string $path
+ * @property Path|string  $path
  * @property Query|string $query
+ *
+ * @psalm-api
  */
 class Fragment extends AbstractPart
 {
-    /** @var string|null The original fragment string. */
-    private $fragment;
-
-    /** @var mixed[] */
+    /** @var array<array-key, mixed> */
     protected $data = [
         'path'  => null,
         'query' => null,
     ];
 
-    /** @var string[] */
+    /** @var array<string, string> */
     protected $partClassMap = [
-        'path' => 'Purl\Path',
+        'path'  => 'Purl\Path',
         'query' => 'Purl\Query',
     ];
 
+    /** @var null|string The original fragment string. */
+    private $fragment;
+
     /**
-     * @param string|Path|null $fragment
+     * @param null|Path|string $fragment
      */
     public function __construct($fragment = null, ?Query $query = null)
     {
         if ($fragment instanceof Path) {
-            $this->initialized  = true;
+            $this->initialized = true;
             $this->data['path'] = $fragment;
         } else {
             $this->fragment = $fragment;
@@ -47,10 +44,15 @@ class Fragment extends AbstractPart
         $this->data['query'] = $query;
     }
 
+    public function __toString(): string
+    {
+        return $this->getFragment();
+    }
+
     /**
      * @param mixed $value
      */
-    public function set(string $key, $value) : AbstractPart
+    public function set(string $key, $value): AbstractPart
     {
         $this->initialize();
         $this->data[$key] = $this->preparePartValue($key, $value);
@@ -58,71 +60,74 @@ class Fragment extends AbstractPart
         return $this;
     }
 
-    public function getFragment() : string
+    public function getFragment(): string
     {
         $this->initialize();
 
-        return sprintf(
+        return \sprintf(
             '%s%s',
             (string) $this->path,
-            (string) $this->query !== '' ? '?' . (string) $this->query : ''
+            '' !== (string) $this->query ? '?'.(string) $this->query : ''
         );
     }
 
-    public function setFragment(string $fragment) : AbstractPart
+    public function setFragment(string $fragment): AbstractPart
     {
         $this->initialized = false;
-        $this->data        = [];
-        $this->fragment    = $fragment;
+        $this->data = [];
+        $this->fragment = $fragment;
 
         return $this;
     }
 
-    public function setPath(Path $path) : AbstractPart
+    public function setPath(Path $path): AbstractPart
     {
         $this->data['path'] = $path;
 
         return $this;
     }
 
-    public function getPath() : Path
+    public function getPath(): Path
     {
         $this->initialize();
+
+        if (!$this->data['path'] instanceof Path) {
+            $this->data['path'] = new Path(null);
+        }
 
         return $this->data['path'];
     }
 
-    public function setQuery(Query $query) : AbstractPart
+    public function setQuery(Query $query): AbstractPart
     {
         $this->data['query'] = $query;
 
         return $this;
     }
 
-    public function getQuery() : Query
+    public function getQuery(): Query
     {
         $this->initialize();
+
+        if (!$this->data['query'] instanceof Query) {
+            $this->data['query'] = new Query(null);
+        }
 
         return $this->data['query'];
     }
 
-    public function __toString() : string
+    protected function doInitialize(): void
     {
-        return $this->getFragment();
-    }
+        if (null !== $this->fragment) {
+            $parsed = \parse_url($this->fragment);
 
-    protected function doInitialize() : void
-    {
-        if ($this->fragment !== null) {
-            $parsed = parse_url($this->fragment);
-
-            if (is_array($parsed)) {
-                $this->data = array_merge($this->data, $parsed);
+            if (\is_array($parsed)) {
+                $this->data = \array_merge($this->data, $parsed);
             }
         }
 
-        foreach ($this->data as $key => $value) {
-            $this->data[$key] = $this->preparePartValue($key, $value);
+        foreach (array_keys($this->data) as $key) {
+            $this->data[$key] = $this->preparePartValue((string) $key, $this->data[$key]);
         }
     }
 }

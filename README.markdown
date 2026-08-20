@@ -3,19 +3,40 @@ Purl
 
 Purl is a simple Object Oriented URL manipulation library for PHP 7.2+
 
-[![Build Status](https://secure.travis-ci.org/jwage/purl.png?branch=master)](http://travis-ci.org/jwage/purl)
-[![Scrutinizer Quality Score](https://scrutinizer-ci.com/g/jwage/purl/badges/quality-score.png?s=7e0e1d4b5d7f6be61a3cd804dba556a0e4d1141d)](https://scrutinizer-ci.com/g/jwage/purl/)
-[![Code Coverage](https://scrutinizer-ci.com/g/jwage/purl/badges/coverage.png?s=a02332bc4d6a32df3171f2ba714e4583a70c0154)](https://scrutinizer-ci.com/g/jwage/purl/)
-[![Latest Stable Version](https://poser.pugx.org/jwage/purl/v/stable.png)](https://packagist.org/packages/jwage/purl)
-[![Total Downloads](https://poser.pugx.org/jwage/purl/downloads.png)](https://packagist.org/packages/jwage/purl)
+[![CI](https://github.com/ship-again/purl/actions/workflows/ci.yml/badge.svg)](https://github.com/ship-again/purl/actions/workflows/ci.yml)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=ship-again_purl&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=ship-again_purl)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=ship-again_purl&metric=coverage)](https://sonarcloud.io/summary/new_code?id=ship-again_purl)
+
+This repository is the Ship Again continuation of the abandoned [`jwage/purl`](https://github.com/jwage/purl) package. The original API and attribution are preserved, including credit to the original author, Jonathan H. Wage.
+
+The library keeps the `Purl\` namespace and supports PHP 7.2 through PHP 8.x. It is released under the MIT license; see [LICENSE](LICENSE) for the original attribution and terms.
 
 ## Installation
 
 The suggested installation method is via [composer](https://getcomposer.org/):
 
 ```sh
-composer require jwage/purl
+composer require ship-again/purl
 ```
+
+Development
+-----------
+
+The repository includes a PHP 8.5 Dev Container with the isolated QA toolchain. After opening it, the same entrypoints used by CI are available:
+
+```sh
+make install
+make test
+make coverage
+make cs-check
+make cs-fix
+make psalm
+make qa
+```
+
+The compatibility workflow also exercises PHP 7.2 through 8.5 with the Composer dependency lines supported by each runtime.
+
+To enable the trusted SonarCloud step, configure repository variables `SONAR_ORGANIZATION` and `SONAR_PROJECT_KEY`, plus the `SONAR_TOKEN` repository secret. Fork pull requests still run the compatibility and local quality gates, while the Sonar upload is skipped because their secrets are unavailable.
 
 Using Purl
 ----------

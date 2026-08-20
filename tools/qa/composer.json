@@ -1,0 +1,14 @@
+{
+    "name": "ship-again/purl-qa",
+    "description": "Isolated quality-assurance tools for ship-again/purl",
+    "type": "project",
+    "license": "MIT",
+    "require": {
+        "friendsofphp/php-cs-fixer": "^3.95.20",
+        "vimeo/psalm": "^6.16.1"
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {}
+    }
+}

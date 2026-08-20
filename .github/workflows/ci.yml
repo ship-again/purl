@@ -1,0 +1,130 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compatibility:
+    name: PHP ${{ matrix.php }} (${{ matrix.dependencies }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - php: '7.2'
+            dependencies: prefer-stable
+            composer_flags: --prefer-stable
+          - php: '7.3'
+            dependencies: prefer-stable
+            composer_flags: --prefer-stable
+          - php: '7.4'
+            dependencies: prefer-stable
+            composer_flags: --prefer-stable
+          - php: '8.0'
+            dependencies: prefer-stable
+            composer_flags: --prefer-stable
+          - php: '8.1'
+            dependencies: prefer-stable
+            composer_flags: --prefer-stable
+          - php: '8.2'
+            dependencies: prefer-stable
+            composer_flags: --prefer-stable
+          - php: '8.3'
+            dependencies: prefer-stable
+            composer_flags: --prefer-stable
+          - php: '8.4'
+            dependencies: prefer-stable
+            composer_flags: --prefer-stable
+          - php: '8.5'
+            dependencies: prefer-stable
+            composer_flags: --prefer-stable
+          - php: '7.2'
+            dependencies: prefer-lowest
+            composer_flags: --prefer-lowest --prefer-stable
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@b604ade2a87db23f8871b7182e69ec5e75effb45 # v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring
+          coverage: none
+          tools: composer
+
+      - name: Resolve dependencies
+        run: >-
+          composer update
+          --no-interaction
+          --no-progress
+          --prefer-dist
+          ${{ matrix.composer_flags }}
+
+      - name: Run PHPUnit
+        run: make test
+
+  quality:
+    name: Quality (PHP 8.5 devcontainer)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out full history
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Run quality gates in the devcontainer
+        uses: devcontainers/ci@513af61f4de4f75d37e4438f184ba4358f0fc1ca # v0.3
+        with:
+          runCmd: make ci-quality
+
+      - name: Upload coverage, Psalm report, and diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: quality-reports
+          path: |
+            build/coverage/clover.xml
+            build/reports/psalm.sonarqube.json
+            build/reports/psalm.exit
+          if-no-files-found: warn
+          retention-days: 5
+
+      - name: Scan with SonarCloud
+        if: >-
+          always() &&
+          (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false) &&
+          vars.SONAR_ORGANIZATION != '' &&
+          vars.SONAR_PROJECT_KEY != ''
+        uses: sonarsource/sonarqube-scan-action@fd88b7d7ccbaefd23d8f36f73b59db7a3d246602 # v6
+        with:
+          projectBaseDir: .
+          args: >-
+            -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
+            -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io
+
+      - name: Restore Psalm blocking status
+        if: always()
+        run: |
+          if [ ! -f build/reports/psalm.exit ]; then
+            echo "Psalm status file is missing"
+            exit 1
+          fi
+
+          status="$(cat build/reports/psalm.exit)"
+          if [ "$status" -ne 0 ]; then
+            echo "Psalm failed with status $status"
+            exit "$status"
+          fi

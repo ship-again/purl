@@ -1,0 +1,19 @@
+{
+    "name": "Purl PHP 8.5",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": ".."
+    },
+    "remoteUser": "vscode",
+    "postCreateCommand": "composer install --no-interaction --prefer-dist",
+    "containerEnv": {
+        "XDEBUG_MODE": "off"
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "xdebug.php-debug"
+            ]
+        }
+    }
+}
