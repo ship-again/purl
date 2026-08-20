@@ -41,4 +41,29 @@ class QueryTest extends TestCase
         $query->setData(['param' => 'value']);
         $this->assertEquals('param=value', $query->getQuery());
     }
+
+    public function testSerializationCacheIsInvalidatedByPublicMutations(): void
+    {
+        $query = new Query('first=value');
+        $this->assertSame('first=value', $query->getQuery());
+
+        $query->setQuery('changed=value');
+        $this->assertSame('changed=value', $query->getQuery());
+
+        $query->setData(['set-data' => 'value']);
+        $this->assertSame('set-data=value', $query->getQuery());
+
+        $query->set('added', 'value');
+        $this->assertSame('set-data=value&added=value', $query->getQuery());
+
+        $query->remove('added');
+        $this->assertSame('set-data=value', $query->getQuery());
+
+        $query['array-access'] = 'value';
+        $this->assertSame('set-data=value&array-access=value', $query->getQuery());
+
+        $query->setData(['magic' => 'value']);
+        $query->magic = 'changed';
+        $this->assertSame('magic=changed', $query->getQuery());
+    }
 }
