@@ -6,8 +6,16 @@
     "homepage": "https://github.com/ship-again/purl",
     "license": "MIT",
     "authors": [
-        {"name": "Jonathan H. Wage", "email": "jonwage@gmail.com"},
-        {"name": "Sergei Lysogor", "email": "me@mstrict.net"}
+        {
+            "name": "Jonathan H. Wage",
+            "email": "jonwage@gmail.com",
+            "role": "Author"
+        },
+        {
+            "name": "Sergei Lysogor",
+            "email": "me@mstrict.net",
+            "role": "Maintainer"
+        }
     ],
     "autoload": {
         "psr-4": {"Purl\\": "src/Purl"}
