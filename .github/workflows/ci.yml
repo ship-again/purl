@@ -112,7 +112,7 @@ jobs:
             -Dsonar.organization=${{ vars.SONAR_ORGANIZATION }}
             -Dsonar.projectKey=${{ vars.SONAR_PROJECT_KEY }}
         env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_SECRET_KEY }}
           SONAR_HOST_URL: https://sonarcloud.io
 
       - name: Restore Psalm blocking status
