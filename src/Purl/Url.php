@@ -164,8 +164,10 @@ class Url extends AbstractPart
             $this->data[$key] = $value;
         }
 
-        foreach (array_keys($this->data) as $key) {
-            $this->data[$key] = $this->preparePartValue((string) $key, $this->data[$key]);
+        foreach ($this->partClassMap as $key => $className) {
+            if (array_key_exists($key, $this->data)) {
+                $this->data[$key] = $this->preparePartValue($key, $this->data[$key]);
+            }
         }
 
         return $this;
@@ -292,8 +294,10 @@ class Url extends AbstractPart
             $this->data[$k] = $v;
         }
 
-        foreach (array_keys($this->data) as $key) {
-            $this->data[$key] = $this->preparePartValue((string) $key, $this->data[$key]);
+        foreach ($this->partClassMap as $key => $className) {
+            if (array_key_exists($key, $this->data)) {
+                $this->data[$key] = $this->preparePartValue($key, $this->data[$key]);
+            }
         }
     }
 

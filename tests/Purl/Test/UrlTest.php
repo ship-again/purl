@@ -25,6 +25,10 @@ class UrlTest extends TestCase
         $this->assertEquals('http://jwage.com/', $url->getUrl());
         $this->assertInstanceOf('Purl\Parser', $url->getParser());
 
+        $firstUrl = new Url('http://first.example.test');
+        $secondUrl = new Url('http://second.example.test');
+        $this->assertNotSame($firstUrl->getParser(), $secondUrl->getParser());
+
         $parser = new TestParser();
         $url = new Url('http://jwage.com', $parser);
         $this->assertSame($parser, $url->getParser());
@@ -95,6 +99,55 @@ class UrlTest extends TestCase
         $this->assertEquals('http://jwage.com/about?param=value#fragment', (string) $url);
         $url->join(new Url('http://about.me/jwage'));
         $this->assertEquals('http://about.me/jwage?param=value#fragment', (string) $url);
+    }
+
+    public function testSetDataPreservesAdditionalKeysAndNormalizesParts(): void
+    {
+        $url = new Url();
+        $url->setData([
+            'scheme'             => 'https',
+            'host'               => 'example.test',
+            'port'               => null,
+            'user'               => null,
+            'pass'               => null,
+            'path'               => 'catalog/items',
+            'query'              => 'q=purl',
+            'fragment'           => 'results',
+            'publicSuffix'       => null,
+            'registerableDomain' => null,
+            'subdomain'          => null,
+            'canonical'          => null,
+            'resource'           => null,
+            'custom'             => 123,
+        ]);
+
+        $data = $url->getData();
+
+        $this->assertSame('catalog/items', $data['path']);
+        $this->assertSame('q=purl', $data['query']);
+        $this->assertSame('results', $data['fragment']);
+        $this->assertSame(123, $data['custom']);
+        $this->assertSame('https://example.test/catalog/items?q=purl#results', $url->getUrl());
+    }
+
+    public function testCustomParserIsCalledOnceAndKeepsParserData(): void
+    {
+        $parser = new CountingParser([
+            'scheme'   => 'https',
+            'host'     => 'custom.example.test',
+            'path'     => '/custom',
+            'query'    => 'mode=test',
+            'fragment' => 'result',
+            'custom'   => 'value',
+        ]);
+        $url = new Url('ignored', $parser);
+
+        $data = $url->getData();
+
+        $this->assertSame(1, $parser->calls);
+        $this->assertSame('value', $data['custom']);
+        $this->assertSame('https://custom.example.test/custom?mode=test#result', $url->getUrl());
+        $this->assertSame(1, $parser->calls);
     }
 
     public function testSetPath(): void
@@ -275,6 +328,26 @@ class UrlTest extends TestCase
         $this->assertEquals('https://we-are-a-professional-studio-of.photography/', (string) $urls[5]);
     }
 
+    public function testExtractCorpusKeepsOrderAndMatchedText(): void
+    {
+        $urls = Url::extract(
+            "https://example.test/path?q=one#top\n"
+            .'ftp://files.example.photography/archive/item '
+            .'FTPS://ignored.example.test '
+            .'http://legacy.example.test:8080/archive/item#details '
+            .'https://example.test/no-path '
+            .'ftps://secure.example.test/download?part=1#fragment'
+        );
+
+        $this->assertSame([
+            'https://example.test/path?q=one#top',
+            'ftp://files.example.photography/archive/item',
+            'http://legacy.example.test/',
+            'https://example.test/no-path',
+            'ftps://secure.example.test/download?part=1#fragment',
+        ], \array_map('strval', $urls));
+    }
+
     public function testManualObjectConstruction(): void
     {
         $url = new Url('http://jwage.com');
@@ -373,5 +446,34 @@ class TestParser implements ParserInterface
     public function parseUrl($url): array
     {
         return [];
+    }
+}
+
+class CountingParser implements ParserInterface
+{
+    /** @var int */
+    public $calls = 0;
+
+    /** @var array<string, mixed> */
+    private $parts;
+
+    /**
+     * @param array<string, mixed> $parts
+     */
+    public function __construct(array $parts)
+    {
+        $this->parts = $parts;
+    }
+
+    /**
+     * @param null|string|Url $url
+     *
+     * @return mixed[]
+     */
+    public function parseUrl($url): array
+    {
+        ++$this->calls;
+
+        return $this->parts;
     }
 }
