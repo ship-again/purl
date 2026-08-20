@@ -257,11 +257,23 @@ class Url extends AbstractPart
     {
         $this->initialize();
 
-        $parts = \array_map(static function ($value): string {
-            return (string) $value;
-        }, $this->data);
+        /** @var null|string $scheme */
+        $scheme = $this->data['scheme'];
 
-        if (!$this->isAbsolute()) {
+        /** @var null|string $host */
+        $host = $this->data['host'];
+        $parts = [
+            'scheme'   => (string) $scheme,
+            'host'     => (string) $host,
+            'port'     => (string) $this->data['port'],
+            'user'     => (string) $this->data['user'],
+            'pass'     => (string) $this->data['pass'],
+            'path'     => (string) $this->data['path'],
+            'query'    => (string) $this->data['query'],
+            'fragment' => (string) $this->data['fragment'],
+        ];
+
+        if (null === $scheme || null === $host) {
             return self::httpBuildRelativeUrl($parts);
         }
 
