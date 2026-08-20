@@ -14,6 +14,8 @@ use Purl\Query;
  */
 class QueryTest extends TestCase
 {
+    use SerializationMutationAssertions;
+
     public function testConstruct(): void
     {
         $query = new Query('param=value');
@@ -44,26 +46,51 @@ class QueryTest extends TestCase
 
     public function testSerializationCacheIsInvalidatedByPublicMutations(): void
     {
-        $query = new Query('first=value');
-        $this->assertSame('first=value', $query->getQuery());
-
-        $query->setQuery('changed=value');
-        $this->assertSame('changed=value', $query->getQuery());
-
-        $query->setData(['set-data' => 'value']);
-        $this->assertSame('set-data=value', $query->getQuery());
-
-        $query->set('added', 'value');
-        $this->assertSame('set-data=value&added=value', $query->getQuery());
-
-        $query->remove('added');
-        $this->assertSame('set-data=value', $query->getQuery());
-
-        $query['array-access'] = 'value';
-        $this->assertSame('set-data=value&array-access=value', $query->getQuery());
-
-        $query->setData(['magic' => 'value']);
-        $query->magic = 'changed';
-        $this->assertSame('magic=changed', $query->getQuery());
+        $this->assertSerializationMutationSequence(
+            new Query('first=value'),
+            function (Query $query): string {
+                return $query->getQuery();
+            },
+            'first=value',
+            [
+                [
+                    'expected' => 'changed=value',
+                    'mutate'   => function (Query $query): void {
+                        $query->setQuery('changed=value');
+                    },
+                ],
+                [
+                    'expected' => 'set-data=value',
+                    'mutate'   => function (Query $query): void {
+                        $query->setData(['set-data' => 'value']);
+                    },
+                ],
+                [
+                    'expected' => 'set-data=value&added=value',
+                    'mutate'   => function (Query $query): void {
+                        $query->set('added', 'value');
+                    },
+                ],
+                [
+                    'expected' => 'set-data=value',
+                    'mutate'   => function (Query $query): void {
+                        $query->remove('added');
+                    },
+                ],
+                [
+                    'expected' => 'set-data=value&array-access=value',
+                    'mutate'   => function (Query $query): void {
+                        $query['array-access'] = 'value';
+                    },
+                ],
+                [
+                    'expected' => 'magic=changed',
+                    'mutate'   => function (Query $query): void {
+                        $query->setData(['magic' => 'value']);
+                        $query->magic = 'changed';
+                    },
+                ],
+            ]
+        );
     }
 }

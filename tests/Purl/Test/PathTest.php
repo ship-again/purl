@@ -14,6 +14,8 @@ use Purl\Path;
  */
 class PathTest extends TestCase
 {
+    use SerializationMutationAssertions;
+
     public function testConstruct(): void
     {
         $path = new Path('test');
@@ -42,26 +44,51 @@ class PathTest extends TestCase
 
     public function testSerializationCacheIsInvalidatedByPublicMutations(): void
     {
-        $path = new Path('initial');
-        $this->assertSame('initial', $path->getPath());
-
-        $path->setPath('changed');
-        $this->assertSame('changed', $path->getPath());
-
-        $path->setData(['set-data']);
-        $this->assertSame('set-data', $path->getPath());
-
-        $path->add('tail');
-        $this->assertSame('set-data/tail', $path->getPath());
-
-        $path->remove('1');
-        $this->assertSame('set-data', $path->getPath());
-
-        $path['0'] = 'array-access';
-        $this->assertSame('array-access', $path->getPath());
-
-        $path->setData(['magic']);
-        $path->value = 'unused';
-        $this->assertSame('magic/unused', $path->getPath());
+        $this->assertSerializationMutationSequence(
+            new Path('initial'),
+            function (Path $path): string {
+                return $path->getPath();
+            },
+            'initial',
+            [
+                [
+                    'expected' => 'changed',
+                    'mutate'   => function (Path $path): void {
+                        $path->setPath('changed');
+                    },
+                ],
+                [
+                    'expected' => 'set-data',
+                    'mutate'   => function (Path $path): void {
+                        $path->setData(['set-data']);
+                    },
+                ],
+                [
+                    'expected' => 'set-data/tail',
+                    'mutate'   => function (Path $path): void {
+                        $path->add('tail');
+                    },
+                ],
+                [
+                    'expected' => 'set-data',
+                    'mutate'   => function (Path $path): void {
+                        $path->remove('1');
+                    },
+                ],
+                [
+                    'expected' => 'set-data/array-access',
+                    'mutate'   => function (Path $path): void {
+                        $path['segment'] = 'array-access';
+                    },
+                ],
+                [
+                    'expected' => 'magic/unused',
+                    'mutate'   => function (Path $path): void {
+                        $path->setData(['magic']);
+                        $path->value = 'unused';
+                    },
+                ],
+            ]
+        );
     }
 }
