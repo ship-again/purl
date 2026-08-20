@@ -42,6 +42,30 @@ not a CI acceptance gate. The benchmark subprocess suppresses only PHP
 deprecation notices from the legacy PHP 7.2-compatible API; PHPUnit and the
 quality checks continue to report those notices.
 
+Benchmark metrics
+-----------------
+
+`make bench` prints PHPBench's aggregate report. The current configuration uses
+5 iterations and 1,000 revolutions per iteration, so every subject is sampled
+five times and its code is executed 1,000 times inside each sample.
+
+| Metric | Meaning |
+| --- | --- |
+| `benchmark` | Benchmark class; currently `UrlBench`. |
+| `subject` | Method being measured, such as `benchParseAndBuild`. |
+| `set` | Parameter set name. It is empty because the current benchmarks use fixed inputs. |
+| `revs` | Number of consecutive subject executions in one iteration. |
+| `its` | Number of measured iterations. |
+| `mem_peak` | Peak memory reported for the benchmark process. Compare it only under the same PHP/runtime setup. |
+| `mode` | The representative (modal) execution time per revolution, shown in the configured time unit. Lower is faster. |
+| `rstdev` | Relative standard deviation across iteration timings. Lower usually means a more stable measurement; a high value suggests background noise or an insufficiently stable environment. |
+
+For example, `7.2μs` in `mode` means that one execution of the subject took
+about 7.2 microseconds in that run's representative sample. It does not mean
+that the complete 1,000-revolution iteration took 7.2 microseconds. Use
+`revs` and `its` together with `mode` and `rstdev` when comparing two runs, and
+keep the PHP version, machine, extensions, and runtime configuration constant.
+
 The compatibility workflow also exercises PHP 7.2 through 8.5 with the Composer dependency lines supported by each runtime.
 
 To enable the trusted SonarCloud step, configure repository variables `SONAR_ORGANIZATION` and `SONAR_PROJECT_KEY`, plus the `SONAR_TOKEN` repository secret. Fork pull requests still run the compatibility and local quality gates, while the Sonar upload is skipped because their secrets are unavailable.
