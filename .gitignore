@@ -4,5 +4,6 @@
 /build
 /vendor
 /tools/qa/vendor
+/tools/bench/vendor
 /.phpunit.result.cache
 /.psalm-cache

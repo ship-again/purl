@@ -27,12 +27,20 @@ The repository includes a PHP 8.5 Dev Container with the isolated QA toolchain. 
 ```sh
 make install
 make test
+make bench
 make coverage
 make cs-check
 make cs-fix
 make psalm
 make qa
 ```
+
+`make bench` runs the local PHPBench baseline in the PHP 8.5 Dev Container. Its
+time and memory values are meaningful for comparisons made with the same PHP
+version, machine, and runtime configuration; they are diagnostic measurements,
+not a CI acceptance gate. The benchmark subprocess suppresses only PHP
+deprecation notices from the legacy PHP 7.2-compatible API; PHPUnit and the
+quality checks continue to report those notices.
 
 The compatibility workflow also exercises PHP 7.2 through 8.5 with the Composer dependency lines supported by each runtime.
 

@@ -1,0 +1,13 @@
+{
+    "name": "ship-again/purl-bench",
+    "description": "Isolated benchmark tools for ship-again/purl",
+    "type": "project",
+    "license": "MIT",
+    "require-dev": {
+        "phpbench/phpbench": "^1.0"
+    },
+    "config": {
+        "allow-plugins": {},
+        "sort-packages": true
+    }
+}

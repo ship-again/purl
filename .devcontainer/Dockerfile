@@ -5,6 +5,7 @@ FROM mcr.microsoft.com/devcontainers/php:8.5-bookworm
 RUN php -m | grep -qi '^xdebug$'
 
 COPY tools/qa/composer.json tools/qa/composer.lock /opt/qa/
+COPY tools/bench/composer.json tools/bench/composer.lock /opt/bench/
 
 RUN composer install \
         --working-dir=/opt/qa \
@@ -12,6 +13,12 @@ RUN composer install \
         --no-progress \
         --prefer-dist \
         --classmap-authoritative \
-    && chown -R vscode:vscode /opt/qa
+    && composer install \
+        --working-dir=/opt/bench \
+        --no-interaction \
+        --no-progress \
+        --prefer-dist \
+        --classmap-authoritative \
+    && chown -R vscode:vscode /opt/qa /opt/bench
 
-ENV PATH="/opt/qa/vendor/bin:${PATH}"
+ENV PATH="/opt/qa/vendor/bin:/opt/bench/vendor/bin:${PATH}"

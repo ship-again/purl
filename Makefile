@@ -1,15 +1,19 @@
 SHELL := /bin/sh
 
 QA_BIN ?= /opt/qa/vendor/bin
+BENCH_BIN ?= /opt/bench/vendor/bin
 PHPUNIT ?= vendor/bin/phpunit
 
-.PHONY: install test coverage cs-check cs-fix psalm qa ci-quality
+.PHONY: install test bench coverage cs-check cs-fix psalm qa ci-quality
 
 install:
 	composer install --no-interaction --prefer-dist
 
 test:
 	$(PHPUNIT) --configuration phpunit.xml.dist
+
+bench:
+	$(BENCH_BIN)/phpbench run --report=aggregate
 
 coverage:
 	mkdir -p build/coverage
