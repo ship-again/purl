@@ -7,4 +7,5 @@
 /tools/bench/vendor
 /.phpunit.result.cache
 /.psalm-cache
+/.phpbench
 /.llm-data
